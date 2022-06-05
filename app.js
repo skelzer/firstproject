@@ -2,7 +2,6 @@ const http = require("http")
 const fs = require("fs")
 const url = require("url")
 const parser = require("accept-language-parser")
-const {parse} = require("accept-language-parser");
 
 function retrieveString(key, locale){
     var string = JSON.parse(fs.readFileSync('./strings.json','utf-8'))
