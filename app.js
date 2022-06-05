@@ -1,10 +1,11 @@
-var http = require("http")
-var output =require("./module.js")
+const http = require("http")
+const fs = require("fs")
 function callback(request,response){
-    response.writeHead(200, {'Content-Type':'text/plain'});
-    response.write("Heyo man\n")
-    response.end("Hello World")
-    console.log(output.greeting)
+    fs.readFile("index.html", function (err,data){
+        response.writeHead(200, {'Content-Type':'text/html'});
+        response.write(data);
+        response.end();
+    });
 }
 
 http.createServer(callback).listen(8080);
