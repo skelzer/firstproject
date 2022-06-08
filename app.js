@@ -5,15 +5,11 @@ const parser = require("accept-language-parser")
 const express = require('express')
 const app = express()
 const port = 7070
+const bodyParser = require("body-parser")
 
-
-app.use(express.static(__dirname))
-
-const users = [
-    {user:"Migue", password:"pass1"},
-    {user:"Migue2", password:"pass2"},
-    {user:"Migue3", password:"pass3 "}
-]
+app.use(bodyParser.urlencoded({extended:true}))
+app.use(bodyParser.json())
+app.use(express.static(__dirname+"/1/"))
 
 
 function retrieveString(key, locale){
@@ -31,18 +27,22 @@ function retrieveString(key, locale){
 function callback(request,response){
     var userLocale= parser.parse(request.headers["accept-language"]);
     userLocale = userLocale[0]["code"]+"-"+userLocale[0]["region"]
-    response.send("Hey theddre")
+    response.send("Hey there")
     response.end();
     }
 
 
 
 app.get('/', function (req, res) {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile('index.html');
 })
-app.get("/users", function (req, res){
-    res.send(users)
+app.post("/login", function (req, res){
+    let userName = req.body.user;
+    let passWord = req.body.pass;
+    console.log(userName + " " + passWord)
+    res.json({status:true})
 })
+
 
 
 
