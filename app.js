@@ -5,8 +5,7 @@ const bodyParser = require("body-parser");
 const _ = require("lodash")
 const http = require("http").Server(app);
 const io = require("socket.io")(http);
-
-let playerList = []
+let playerList = new Map()
 let playersReady = 0
 
 app.use(express.static(__dirname+"/1/"))
@@ -16,20 +15,24 @@ app.get('/', function (req, res) {
 io.on("connection",function (s){
     console.log("Ready to use the socket")
     s.on("player", function (id){
-        const player = {id : null , roll : null}
-        player.id = id
-        console.log("Player joined " + player.id)
-        playerList.push(player)
-        io.emit("newPlayer", playerList)
+        playerList.set(id, "")
+        console.log("Player joined " + id)
+        console.log(playerList)
+        io.emit("newPlayer", Array.from(playerList))
     })
     s.on("ready", function (){
         playersReady++
-        if (playersReady > 1 && playersReady == playerList.length){
+        if (playersReady > 1 && playersReady == playerList.size){
             io.emit("gameOn")
             console.log("Game's on")
         }
     })
     s.on("unready", function (){ playersReady-- })
+    s.on("roll", function (id){
+        let roll = _.random(1,6)
+        playerList.set(id, roll)
+        io.emit("diceRolled", Array.from(playerList))
+    })
 })
 
 

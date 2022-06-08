@@ -1,26 +1,134 @@
 <h1>Socket.IO test</h1>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
+<link href="css/dice.css" rel="stylesheet">
+
 <input name ="user", type="text" value="Laurence", id="text1">
 <button class = "btn", id="btn1">Join</button>
 <button class = "btn", id="ready", hidden>Ready</button>
 <div class="output", id="playerList"></div>
+<div class="panel", id="dice", hidden>
+    <div class="dice">
+        <div class="side one">
+            <span class="dot"></span>
+        </div>
+        <div class="side two">
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+        <div class="side three">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+        </div>
+        <div class="side four">
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+        <div class="side five">
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="kolona">
+                <span class="dot"></span>
+            </div>
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+        <div class="side six">
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+            <div class="kolona">
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div>
+    <button id="spin", id="spin", hidden>Roll the dice</button>
+</div>
+
 <script>
     const socket = io()
+    let joined = false
     let ready = false
-    $("#btn1").click(function (){
+    let rolled = false
+    let awaitingRoll = false
+    
+    let PLAYERLIST = $("#playerList")
+    let PLAYERINPUT = $("#text1")
+    let JOINBUTTON = $("#btn1")
+    let READYBUTTON = $("#ready")
+    let SPINBUTTON = $("#spin")
+    
+    function rollDice(rolledNumber){
+        $("#dice-color").val("#000000");
+        $("#dot-color").val("#ffd700");
+        let x, y;
+        switch (rolledNumber) {
+            case 1:
+                x = 720;
+                y = 810;
+                break;
+            case 6:
+                x = 720;
+                y = 990;
+                break;
+            default:
+                x = 720 + (6 - rolledNumber) * 90;
+                y = 900;
+                break;
+        }
+        console.log("diceParams", x, y)
+        $(".dice").css(
+            "transform",
+            "translateZ(-100px) rotateY(" + x + "deg) rotateX(" + y + "deg)"
+        );
+    }
+    function refreshList (players){
+        PLAYERLIST.empty();
+        PLAYERLIST.html("<h2>Players </h2>")
+        let userList = new Map(players)
+        console.log(userList)
+        for (let key of userList.keys()){
+            let div = document.createElement("div")
+            div.textContent = key + "\t" + userList.get(key)
+            PLAYERLIST.append(div)
+        }
+    }
+
+    JOINBUTTON.click(function (){
         console.log("Emitted event")
-        socket.emit("player", $("#text1").val())
+        joined = true
+        player = PLAYERINPUT.val()
+        socket.emit("player", player)
     })
-    $("#ready").click(function (){
+    READYBUTTON.click(function (){
         console.log("Ready Player One")
         if (!ready) {
-            $("#ready").text("Waiting for other players...")
+            READYBUTTON.text("Waiting for other players...")
             socket.emit("ready")
             ready = !ready
         }
         else{
-            $("#ready").text("Ready")
+            READYBUTTON.text("Ready")
             socket.emit("unready")
             ready = !ready
         }
@@ -28,17 +136,33 @@
     })
     socket.on("newPlayer", listPlayers)
     function listPlayers(players){
-        console.log(players)
-        $("#text1").hide();
-        $("#btn1").hide();
-        $("#ready").show();
-        $("#playerList").html("<h2>Players </h2>")
-        players.forEach(function (player){
-            let div = document.createElement("div")
-            div.textContent = player.id
-            $("#playerList").append(div)
-        })
-
+        if(joined) {
+            PLAYERINPUT.hide();
+            JOINBUTTON.hide();
+            READYBUTTON.show();
+        }
+        refreshList(players)
     }
+    socket.on("gameOn", function (){
+        READYBUTTON.hide();
+        SPINBUTTON.show();
+        $("#dice").show();
+    })
+
+    SPINBUTTON.click(function (){
+        socket.emit("roll", player)
+        //SPINBUTTON.prop("disabled", true);
+        awaitingRoll = true
+    })
+
+    socket.on("diceRolled", function (players){
+        refreshList(players)
+        let userList = new Map(players)
+        if (awaitingRoll) {
+            console.log("Dice should be moving and should roll to"+ userList.get(player))
+            rollDice(userList.get(player))
+            awaitingRoll = false
+        }
+    })
 
 </script>
