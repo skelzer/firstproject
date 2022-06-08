@@ -1,20 +1,44 @@
-<h1>Hello This is THE REMIX</h1>
-<form method="post">
-    <input type="text" name="user" value="User name">
-    <input type="text" name="pass" value="Password">
-    <div class ="btn">Submit</div>
-</form>
+<h1>Socket.IO test</h1>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<input name ="user", type="text" value="Laurence", id="text1">
+<button class = "btn", id="btn1">Join</button>
+<button class = "btn", id="ready", hidden>Ready</button>
+<div class="output", id="playerList"></div>
 <script>
-    const btn = document.querySelector(".btn")
-    btn.addEventListener("click", function (){              //Create POST request to /login
-        const formData = new FormData(document.forms[0]);
-        const searchParams = new URLSearchParams()
-        for( let val of formData){
-                searchParams.append(val[0], val[1])
-        }
-        fetch("/login",{
-            method : "post",
-            body : searchParams
-        })
+    const socket = io()
+    let ready = false
+    $("#btn1").click(function (){
+        console.log("Emitted event")
+        socket.emit("player", $("#text1").val())
     })
+    $("#ready").click(function (){
+        console.log("Ready Player One")
+        if (!ready) {
+            $("#ready").text("Waiting for other players...")
+            socket.emit("ready")
+            ready = !ready
+        }
+        else{
+            $("#ready").text("Ready")
+            socket.emit("unready")
+            ready = !ready
+        }
+        //socket.emit("ready", player.id)
+    })
+    socket.on("newPlayer", listPlayers)
+    function listPlayers(players){
+        console.log(players)
+        $("#text1").hide();
+        $("#btn1").hide();
+        $("#ready").show();
+        $("#playerList").html("<h2>Players </h2>")
+        players.forEach(function (player){
+            let div = document.createElement("div")
+            div.textContent = player.id
+            $("#playerList").append(div)
+        })
+
+    }
+
 </script>

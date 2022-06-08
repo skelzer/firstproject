@@ -1,50 +1,39 @@
-const http = require("http")
-const fs = require("fs")
-const url = require("url")
-const parser = require("accept-language-parser")
-const express = require('express')
-const app = express()
-const port = 7070
-const bodyParser = require("body-parser")
+const express = require('express');
+const app = express();
+const port = 7070;
+const bodyParser = require("body-parser");
+const _ = require("lodash")
+const http = require("http").Server(app);
+const io = require("socket.io")(http);
 
-app.use(bodyParser.urlencoded({extended:true}))
-app.use(bodyParser.json())
+let playerList = []
+let playersReady = 0
+
 app.use(express.static(__dirname+"/1/"))
-
-
-function retrieveString(key, locale){
-    var string = JSON.parse(fs.readFileSync('./strings.json','utf-8'))
-    if (string){
-        return string[key][locale]
-    }
-    else{
-        return false
-    }
-
-}
-
-
-function callback(request,response){
-    var userLocale= parser.parse(request.headers["accept-language"]);
-    userLocale = userLocale[0]["code"]+"-"+userLocale[0]["region"]
-    response.send("Hey there")
-    response.end();
-    }
-
-
-
 app.get('/', function (req, res) {
     res.sendFile('index.html');
 })
-app.post("/login", function (req, res){
-    let userName = req.body.user;
-    let passWord = req.body.pass;
-    console.log(userName + " " + passWord)
-    res.json({status:true})
+io.on("connection",function (s){
+    console.log("Ready to use the socket")
+    s.on("player", function (id){
+        const player = {id : null , roll : null}
+        player.id = id
+        console.log("Player joined " + player.id)
+        playerList.push(player)
+        io.emit("newPlayer", playerList)
+    })
+    s.on("ready", function (){
+        playersReady++
+        if (playersReady > 1 && playersReady == playerList.length){
+            io.emit("gameOn")
+            console.log("Game's on")
+        }
+    })
+    s.on("unready", function (){ playersReady-- })
 })
 
 
 
-
-app.listen(port, function (){return console.log("Server started");})
-//http.createServer(callback).listen(8080);
+const server = http.listen(port, function (){
+    console.log("Ready on " + port)
+})
